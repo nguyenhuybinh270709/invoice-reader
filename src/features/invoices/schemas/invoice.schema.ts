@@ -1,44 +1,26 @@
-export type NumberLocale = "vi" | "en";
+import { z } from "zod";
 
-const SEPARATORS: Record<NumberLocale, { thousand: string; decimal: string }> =
-  {
-    vi: { thousand: ".", decimal: "," },
-    en: { thousand: ",", decimal: "." },
-  };
+export const lineItemSchema = z.object({
+  nameRaw: z.string(),
+  nameVi: z.string(),
+  quantityRaw: z.string(),
+  unitPriceRaw: z.string(),
+  amountRaw: z.string(),
+});
 
-export function parseAmount(raw: string, locale: NumberLocale): number | null {
-  const cleaned = raw.replace(/[^\d.,-]/g, "");
-  if (!/\d/.test(cleaned)) return null;
-  const { thousand, decimal } = SEPARATORS[locale];
-  const normalized = cleaned.split(thousand).join("").replace(decimal, ".");
-  const value = Number(normalized);
-  return Number.isFinite(value) ? value : null;
-}
+export const rawInvoiceSchema = z.object({
+  sellerName: z.string().nullable(),
+  sellerTaxCode: z.string().nullable(),
+  invoiceNumber: z.string().nullable(),
+  issueDateRaw: z.string().nullable(),
+  currency: z.enum(["VND", "USD", "OTHER"]),
+  documentLocale: z.enum(["vi", "en", "unknown"]),
+  items: z.array(lineItemSchema),
+  subtotalRaw: z.string().nullable(),
+  vatRaw: z.string().nullable(),
+  totalRaw: z.string().nullable(),
+  fieldsNeedingReview: z.array(z.string()),
+});
 
-function sumOrNull(values: readonly (number | null)[]): number | null {
-  let total = 0;
-  for (const value of values) {
-    if (value === null) return null;
-    total += value;
-  }
-  return total;
-}
-
-export function detectNumberLocale(
-  lineAmountRaws: readonly string[],
-  totalRaw: string,
-  tolerance = 1,
-): NumberLocale | null {
-  const candidates: NumberLocale[] = ["vi", "en"];
-  const matches = candidates.filter((locale) => {
-    const lines = sumOrNull(
-      lineAmountRaws.map((raw) => parseAmount(raw, locale)),
-    );
-    const total = parseAmount(totalRaw, locale);
-    return (
-      lines !== null && total !== null && Math.abs(lines - total) <= tolerance
-    );
-  });
-  const [only] = matches;
-  return matches.length === 1 && only !== undefined ? only : null;
-}
+export type LineItem = z.infer<typeof lineItemSchema>;
+export type RawInvoice = z.infer<typeof rawInvoiceSchema>;
