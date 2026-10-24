@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { detectNumberLocale, parseAmount } from "./parse-amount";
+import { detectNumberLocale, parseAmount, sumOrNull } from "./parse-amount";
 
 describe("parseAmount", () => {
   it("đọc số kiểu Việt với dấu chấm phân cách hàng nghìn", () => {
@@ -9,6 +9,7 @@ describe("parseAmount", () => {
 
   it("đọc số kiểu Việt với dấu phẩy thập phân", () => {
     expect(parseAmount("1.234,50", "vi")).toBe(1234.5);
+    expect(parseAmount("0,5", "vi")).toBe(0.5);
   });
 
   it("đọc số kiểu Anh với dấu phẩy phân cách hàng nghìn", () => {
@@ -25,9 +26,35 @@ describe("parseAmount", () => {
     expect(parseAmount("-5.000", "vi")).toBe(-5000);
   });
 
+  it("đọc số không có dấu phân cách", () => {
+    expect(parseAmount("1234567", "vi")).toBe(1234567);
+    expect(parseAmount("1234567", "en")).toBe(1234567);
+  });
+
+  it("từ chối nhóm hàng nghìn không đủ 3 chữ số", () => {
+    expect(parseAmount("10.50", "vi")).toBeNull();
+    expect(parseAmount("1,23", "en")).toBeNull();
+    expect(parseAmount("1.2345.678", "vi")).toBeNull();
+  });
+
+  it("từ chối số có nhiều dấu thập phân", () => {
+    expect(parseAmount("1,2,3", "vi")).toBeNull();
+    expect(parseAmount("1.2.3", "en")).toBeNull();
+  });
+
   it("trả về null khi không có chữ số", () => {
     expect(parseAmount("abc", "vi")).toBeNull();
     expect(parseAmount("", "en")).toBeNull();
+  });
+});
+
+describe("sumOrNull", () => {
+  it("cộng tất cả giá trị", () => {
+    expect(sumOrNull([1, 2, 3])).toBe(6);
+  });
+
+  it("trả về null khi có giá trị null", () => {
+    expect(sumOrNull([1, null, 3])).toBeNull();
   });
 });
 
