@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
 import {
+  normalizeInvoice,
+  todayInVietnam,
+} from "@/features/invoices/lib/normalize-invoice";
+import {
   extractInvoice,
   type ExtractFailureReason,
 } from "@/features/invoices/server/extract-invoice";
@@ -43,5 +47,6 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ invoice: result.invoice });
+  const invoice = normalizeInvoice(result.invoice, { today: todayInVietnam() });
+  return NextResponse.json({ invoice });
 }
