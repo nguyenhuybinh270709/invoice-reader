@@ -3,12 +3,11 @@ import {
   normalizeInvoice,
   todayInVietnam,
 } from "@/features/invoices/lib/normalize-invoice";
+import { MAX_FILE_BYTES } from "@/features/invoices/lib/upload-rules";
 import {
   extractInvoice,
   type ExtractFailureReason,
 } from "@/features/invoices/server/extract-invoice";
-
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 type FailureResponse = {
   status: number;
@@ -20,7 +19,16 @@ const FAILURE_RESPONSES: Record<ExtractFailureReason, FailureResponse> = {
     status: 415,
     message: "Định dạng file không được hỗ trợ",
   },
-  no_tool_output: { status: 422, message: "Không đọc được hóa đơn" },
+  rate_limited: {
+    status: 429,
+    message:
+      "Đã hết lượt đọc hóa đơn [miễn phí] trong lúc này. Vui lòng thử lại sau ít phút.",
+  },
+  provider_error: {
+    status: 502,
+    message: "Dịch vụ đọc hóa đơn đang gặp sự cố. Vui lòng thử lại.",
+  },
+  no_output: { status: 422, message: "Không đọc được hóa đơn" },
   invalid_output: { status: 422, message: "Dữ liệu trích xuất không hợp lệ" },
 };
 
